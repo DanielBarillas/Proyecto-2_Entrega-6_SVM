@@ -1,0 +1,99 @@
+---
+title: "Proyecto 2. Entrega 6. SVM"
+author: 
+  - "Pablo Daniel Barillas Moreno, Carné No. 22193"
+  - "Mathew Cordero Aquino, Carné No. 22982"
+output:
+  pdf_document:
+    latex_engine: xelatex
+  html_document: default
+always_allow_html: true
+date: "2025-03-14"
+header-includes:
+   - \usepackage{fvextra}
+   - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+repository: "https://github.com/DanielBarillas/Proyecto-2_Entrega-6_SVM.git"
+---
+
+### Enlace al Repositorio del proyecto 2 - Entrega 5 de minería de datos del Grupo #1
+[Repositorio en GitHub](https://github.com/DanielBarillas/Proyecto-2_Entrega-6_SVM.git)
+
+### 0. Descargue los conjuntos de datos. 
+
+Para este punto, ya se ha realizado el proceso para descargar del sitio web: [House Prices - Advanced Regression Techniques](https://kaggle.com/competitions/house-prices-advanced-regression-techniques), la data de entrenamiento y la data de prueba, ambos extraídos desde la carpeta "house_prices_data/" en data frames llamados train_data (data de entrenamiento) y test_data (data de prueba), sin convertir automáticamente las variables categóricas en factores (stringsAsFactors = FALSE). Luego, se realiza una inspección inicial de train_data mediante tres funciones: head(train_data), que muestra las primeras filas del dataset; str(train_data), que despliega la estructura del data frame, incluyendo el tipo de cada variable; y summary(train_data), que proporciona un resumen estadístico de las variables numéricas y una descripción general de las categóricas.
+
+```{r}
+  train_data <- read.csv("train_set.csv", stringsAsFactors = FALSE)
+  test_data <- read.csv("test_set.csv", stringsAsFactors = FALSE)
+  
+  head(train_data)   # Muestra las primeras filas
+  str(train_data)    # Muestra la estructura del dataset
+  summary(train_data) # Resumen estadístico
+```
+
+### 1. Use los mismos conjuntos de entrenamiento y prueba de las hojas de trabajo pasadas para probar el algoritmo. 
+
+```{r}
+
+```
+
+### 2. Explore los datos y explique las transformaciones que debe hacerle para generar un modelo de máquinas vectoriales de soporte. 
+
+```{r}
+
+```
+
+### 3. Use como variable respuesta la variable categórica que especifica si la casa es barata, media o cara 
+
+```{r}
+
+```
+
+### 4. Genere varios (más de 2) modelos de SVM con diferentes kernels y distintos valores en los parámetros c, gamma (circular) y d (en caso de que utilice el polinomial). Puede tunear el modelo de forma automática siempre que explique los resultados 5. Use los modelos para predecir el valor de la variable respuesta 
+
+```{r}
+
+```
+
+### 5. Haga las matrices de confusión respectivas. 
+
+```{r}
+
+```
+
+### 6. Analice si los modelos están sobreajustados o desajustados. ¿Qué puede hacer para manejar el sobreajuste o desajuste? 
+
+```{r}
+
+```
+
+### 7. Compare los resultados obtenidos con los diferentes modelos que hizo en cuanto a efectividad, tiempo de procesamiento y equivocaciones (donde el algoritmo se equivocó más, donde se equivocó menos y la importancia que tienen los errores). 
+
+```{r}
+
+```
+
+### 8. Compare la eficiencia del mejor modelo de SVM con los resultados obtenidos en los algoritmos de las hojas de trabajo anteriores que usen la misma variable respuesta (árbol de decisión y random forest, naive bayes, KNN, regresión logística). ¿Cuál es mejor para predecir? ¿Cuál se demoró más en procesar? 
+
+```{r}
+
+```
+
+### 9. Genere un buen modelo de regresión, use para esto la variable del precio de la casa directamente. Tunee el modelo. 
+
+```{r}
+
+```
+
+### 10. Compare los resultados del modelo de regresión generado con los de hojas anteriores que utilicen la misma variable, como la de regresión lineal, el árbol de regresión, naive bayes, KNN.  
+
+```{r}
+
+```
+
+### 11. Genere un informe de los resultados y las explicaciones. 
+
+```{r}
+
+```
+
