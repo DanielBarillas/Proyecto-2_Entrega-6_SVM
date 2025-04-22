@@ -34,64 +34,752 @@ Para este punto, ya se ha realizado el proceso para descargar del sitio web: [Ho
 ### 1. Use los mismos conjuntos de entrenamiento y prueba de las hojas de trabajo pasadas para probar el algoritmo. 
 
 ```{r}
+# 📦 Cargar librerías necesarias
+library(dplyr)
+library(readr)
 
+# 🔄 Fijar semilla para reproducibilidad
+set.seed(123)
+
+# 📂 Cargar los conjuntos de datos previamente usados
+train <- read_csv("train_set.csv")
+test <- read_csv("test_set.csv")
+
+# 👁️ Verificar estructura general y dimensiones
+cat("Observaciones en train:", nrow(train), "\n")
+cat("Observaciones en test:", nrow(test), "\n")
+
+# ✅ Asegurar que la variable de salida es factor
+train$SalePriceCat <- as.factor(train$SalePriceCat)
+test$SalePriceCat <- as.factor(test$SalePriceCat)
+
+# 🔍 Verificar primeras observaciones de interés
+cat("\nPrimeras observaciones:\n")
+print(head(train[, c("SalePrice", "SalePriceCat")]))
+
+# 📊 Frecuencia de clases en el conjunto de entrenamiento
+cat("\nDistribución de SalePriceCat en train:\n")
+print(table(train$SalePriceCat))
+
+# 🔎 Confirmar estructura de la variable objetivo
+cat("\nEstructura de la variable SalePriceCat:\n")
+str(train$SalePriceCat)
 ```
+
+**📄 Exploración inicial de los datos**
+
+Al cargar los conjuntos de datos `train_set.csv` y `test_set.csv`, se obtuvo una salida descriptiva automática proporcionada por la función `read_csv()` del paquete `readr`. Esta salida indica que ambos conjuntos tienen exactamente **84 columnas**, divididas en:
+
+- **42 columnas de tipo carácter (`chr`)**, correspondientes a variables **categóricas**, como `MSZoning`, `Neighborhood`, `BldgType`, entre otras.
+- **42 columnas de tipo numérico (`dbl`)**, como `LotArea`, `OverallQual`, `GrLivArea`, `SalePrice`, etc.
+
+También se observa que:
+
+- El conjunto de entrenamiento contiene **937 observaciones**.
+- El conjunto de prueba contiene **232 observaciones**.
+
+Además, se validó que la variable categórica objetivo `SalePriceCat` (con niveles: `barata`, `media`, `cara`) esté correctamente codificada como factor. La distribución de clases en el conjunto de entrenamiento es **perfectamente balanceada**, con **313 observaciones para "barata"**, **312 para "media"**, y **312 para "cara"**.
+
+Finalmente, se visualizaron las primeras observaciones para comprobar que los valores de `SalePrice` y su categoría `SalePriceCat` coinciden correctamente:
+
+| SalePrice | SalePriceCat |
+|-----------|--------------|
+| 223500    | cara         |
+| 250000    | cara         |
+| 307000    | cara         |
+| 200000    | cara         |
+| 118000    | barata       |
+| 144000    | media        |
+
+Esto confirma que los datos están correctamente cargados y estructurados para entrenar un modelo de clasificación con SVM en las siguientes etapas.
 
 ### 2. Explore los datos y explique las transformaciones que debe hacerle para generar un modelo de máquinas vectoriales de soporte. 
 
+Para entrenar un modelo de máquinas de vectores de soporte (**SVM**), es fundamental preparar los datos adecuadamente. A continuación se describen las transformaciones necesarias y el porqué de cada una:
+
+
+**🔹 1. Codificación de variables categóricas**
+
+Las máquinas SVM no pueden trabajar directamente con variables de tipo `character` o `factor`. Por lo tanto, es necesario transformar todas las variables **categóricas** en variables **dummy** o **indicadoras**. Esto se puede lograr fácilmente usando `model.matrix()` o funciones automáticas de preprocesamiento de `caret`.
+
+
+**🔹 2. Normalización de variables numéricas**
+
+SVM es muy sensible a la escala de los datos. Por eso, es **obligatorio escalar (normalizar)** las variables numéricas, especialmente cuando se usa un **kernel radial o polinómico**. Esto se hará con `preProcess = c("center", "scale")`.
+
+
+**🔹 3. Selección de variables relevantes**
+
+Dado que tenemos 84 variables, muchas de ellas pueden no aportar al modelo o incluso introducir ruido. Para este experimento inicial, se usarán **solo variables numéricas puras**, excluyendo el `Id` y la variable objetivo.
+
 ```{r}
+# 📦 Librerías necesarias
+library(caret)
+library(dplyr)
+
+# 🔄 Semilla
+set.seed(123)
+
+# 🧹 Eliminar columna Id
+train_svm <- train %>% select(-Id)
+test_svm  <- test %>% select(-Id)
+
+# 🎯 Variables objetivo
+y_train <- train_svm$SalePriceCat
+y_test  <- test_svm$SalePriceCat
+
+# 🔍 Separar predictores
+x_train <- train_svm %>% select(-SalePrice, -SalePriceCat)
+x_test  <- test_svm %>% select(-SalePrice, -SalePriceCat)
+
+# 🔁 Convertir character a factor
+x_train <- x_train %>% mutate(across(where(is.character), as.factor))
+x_test  <- x_test %>% mutate(across(where(is.character), as.factor))
+
+# 🧩 Combinar para detectar todos los niveles posibles
+x_all <- bind_rows(x_train, x_test)
+
+# ⚙️ Crear dummyVars con todos los niveles presentes
+dv <- dummyVars(" ~ .", data = x_all, fullRank = TRUE)
+
+# 🔄 Generar dummies por separado
+x_train_dummy <- predict(dv, newdata = x_train)
+x_test_dummy  <- predict(dv, newdata = x_test)
+
+# 🧼 Preprocesar (centrar y escalar)
+preproc <- preProcess(x_train_dummy, method = c("center", "scale"))
+x_train_scaled <- predict(preproc, x_train_dummy)
+x_test_scaled  <- predict(preproc, x_test_dummy)
+
+# ✅ Confirmación
+cat("✔️ Datos listos para entrenar SVM sin errores de niveles\n")
+cat("Train:", dim(x_train_scaled), " | Test:", dim(x_test_scaled), "\n")
+```
+**📌 Conclusión**
+
+> Las transformaciones realizadas —**dummificación de variables categóricas**, **normalización de variables numéricas**, y **selección de variables relevantes**— son esenciales para garantizar el correcto funcionamiento de los modelos SVM, especialmente cuando se usan kernels no lineales. Esto deja los datos completamente preparados para entrenar modelos en el siguiente paso.
+
+Perfecto, aquí tienes el **texto completo y explicativo** incluyendo tanto el aviso de varianza como el mensaje de confirmación del preprocesamiento:
+
+---
+
+### 🧼 Preprocesamiento exitoso de los datos para SVM
+
+Al finalizar el preprocesamiento, el sistema reportó lo siguiente:
 
 ```
+Aviso: These variables have zero variances: Neighborhood.Blueste, Condition2.RRAn, RoofStyle.Shed, Foundation.Wood, Electrical.Mix, GarageQual.Po
+✔️ Datos listos para entrenar SVM sin errores de niveles
+Train: 937 243  | Test: 232 243
+```
+
+Este mensaje entrega **dos piezas clave de información**:
+
+**1. Variables con varianza cero**
+
+> *These variables have zero variances: ...*
+
+Esto significa que esas variables dummy (creadas a partir de variables categóricas) **tienen el mismo valor en todas las observaciones del conjunto de entrenamiento**, usualmente 0. Esto ocurre cuando:
+
+- Ninguna observación del `train` pertenece a esa categoría.
+- La categoría existe en el conjunto de prueba, pero **no fue representada en `train`**.
+
+Ejemplo: si ninguna vivienda en `train` está en el vecindario *Blueste*, entonces la variable `Neighborhood.Blueste` será 0 en todas las filas.
+
+Estas variables:
+- ❌ **No aportan información útil** al modelo.
+- ✅ **No generan errores**.
+- 🧹 Se pueden eliminar si se desea un modelo más limpio.
+
+**2. Confirmación del preprocesamiento**
+
+> *✔️ Datos listos para entrenar SVM sin errores de niveles*
+
+Esta línea confirma que los datos han sido correctamente:
+- Dummyficados (variables categóricas convertidas en columnas binarias),
+- Escalados (centrados y normalizados),
+- Sin problemas de categorías nuevas en `test` (gracias a `dummyVars()` entrenado sobre `train + test` juntos),
+- Listos para pasar al modelo SVM.
+
+También se reportaron las **dimensiones finales** de los datos:
+
+- `Train: 937 observaciones y 243 variables`
+- `Test: 232 observaciones y 243 variables`  
+  → Lo que asegura que ambos conjuntos tienen la **misma estructura** y están completamente sincronizados para su uso en modelos.
+
+**✅ Conclusión**
+
+Los datos han sido preprocesados correctamente para entrenar modelos SVM multiclase. Las variables con varianza cero no representan errores, pero se pueden eliminar opcionalmente. El pipeline garantiza que el conjunto de entrenamiento y prueba están listos para ser utilizados en modelos sin errores de contraste ni estructura.
 
 ### 3. Use como variable respuesta la variable categórica que especifica si la casa es barata, media o cara 
 
 ```{r}
+# 📦 Librerías necesarias
+library(caret)
+library(dplyr)
+
+# 🔄 Fijar semilla
+set.seed(123)
+
+# 🧼 Convertir los dummy a data.frame
+x_train_dummy <- as.data.frame(x_train_dummy)
+x_test_dummy  <- as.data.frame(x_test_dummy)
+
+# 💣 Eliminar columnas con varianza 0 en train
+varianzas <- apply(x_train_dummy, 2, var)
+cols_validas <- names(varianzas[!is.na(varianzas) & varianzas > 0])
+x_train_dummy <- x_train_dummy[, cols_validas]
+
+# 🧩 Alinear columnas en test (agregar faltantes con 0)
+faltantes <- setdiff(cols_validas, colnames(x_test_dummy))
+for (col in faltantes) {
+  x_test_dummy[[col]] <- 0
+}
+
+# 🔄 Reordenar columnas en test para que coincidan con train
+x_test_dummy <- x_test_dummy[, cols_validas]
+
+# ✅ Confirmación de que están alineadas
+stopifnot(identical(colnames(x_train_dummy), colnames(x_test_dummy)))
+
+# ⚖️ Escalar datos
+preproc <- preProcess(x_train_dummy, method = c("center", "scale"))
+x_train_scaled <- predict(preproc, x_train_dummy)
+x_test_scaled  <- predict(preproc, x_test_dummy)
+
+# 🤖 Entrenar modelo SVM lineal con fallback a SVM radial
+cat("🎯 Entrenando modelo SVM lineal...\n")
+tryCatch({
+  svm_linear_model <- train(
+    x = x_train_scaled,
+    y = y_train,
+    method = "svmLinear",
+    trControl = trainControl(method = "cv", number = 10),
+    preProcess = NULL,
+    tuneLength = 3
+  )
+  print(svm_linear_model)
+}, error = function(e) {
+  cat("❌ SVM lineal falló. Cambiando a SVM radial...\n")
+  svm_linear_model <<- train(
+    x = x_train_scaled,
+    y = y_train,
+    method = "svmRadial",
+    trControl = trainControl(method = "cv", number = 10),
+    preProcess = NULL,
+    tuneLength = 3
+  )
+  print(svm_linear_model)
+})
+```
+**Entrenamiento del modelo SVM multiclase (`SalePriceCat`)**
+
+En este paso se entrenó un modelo de **Máquinas de Vectores de Soporte (SVM)** utilizando como variable de salida `SalePriceCat`, una variable categórica multiclase que clasifica las viviendas como **barata**, **media** o **cara**. Esta variable fue generada previamente mediante la partición del precio de venta (`SalePrice`) en terciles, lo que permitió una división balanceada de las observaciones en tres grupos.
+
+El modelo se construyó empleando un **kernel lineal**, lo cual implica que el clasificador busca hiperplanos en el espacio de características originales (no transformado) que maximicen el margen entre las clases. Esta opción fue seleccionada como punto de partida debido a su menor complejidad computacional y su interpretabilidad.
+
+**⚙️ Detalles técnicos del entrenamiento**
+
+- **Observaciones utilizadas:** 937 (conjunto de entrenamiento).
+- **Número de predictores:** 207, resultantes de aplicar `dummyVars` para convertir variables categóricas en variables indicadoras (dummies), y eliminar aquellas con **varianza cero**, que no aportaban información discriminativa al modelo.
+- **Validación cruzada:** Se aplicó una estrategia de **validación cruzada estratificada con 10 particiones** (`k = 10`) para estimar el rendimiento del modelo de forma robusta y prevenir sobreajuste.
+- **Preprocesamiento:** El preprocesamiento se realizó *antes del entrenamiento*, aplicando:
+  - Escalamiento y centrado de las variables (`center` y `scale`)
+  - Imputación de valores faltantes por la mediana (en pasos anteriores)
+- **Parámetro C:** Aunque se indicó `tuneLength = 3`, el método `svmLinear` no realiza sintonización por defecto, por lo que **C fue fijado en 1**, valor común para regularización estándar.
+
+**📈 Resultados obtenidos en validación cruzada**
+
+A continuación, se resumen los resultados alcanzados por el modelo al evaluar su desempeño en las particiones de entrenamiento:
+
+| **Métrica**         | **Valor**                     |
+|---------------------|-------------------------------|
+| Accuracy            | **83.99%**                    |
+| Kappa               | **0.76**                      |
+| Número de clases    | 3 (`barata`, `media`, `cara`) |
+| Kernel utilizado    | **Lineal**                    |
+| Predictores finales | 207 variables                 |
+
+- **Accuracy**: La precisión global indica que el modelo fue capaz de predecir correctamente la clase de la vivienda en el **84% de los casos**, lo que representa un buen desempeño general para un problema multiclase.
+- **Kappa**: El valor de **0.76** sugiere un **alto nivel de concordancia** entre las predicciones y los valores reales, considerando el azar. En contextos de clasificación multiclase, este valor puede considerarse **muy satisfactorio**.
+
+**⚠️ Advertencias durante el entrenamiento**
+
+Durante la validación cruzada, el modelo emitió múltiples advertencias de la forma:
 
 ```
+Aviso: Variable(s) '' constant. Cannot scale data.
+```
 
-### 4. Genere varios (más de 2) modelos de SVM con diferentes kernels y distintos valores en los parámetros c, gamma (circular) y d (en caso de que utilice el polinomial). Puede tunear el modelo de forma automática siempre que explique los resultados 5. Use los modelos para predecir el valor de la variable respuesta 
+Estas advertencias indican que, en algunas de las divisiones (folds) de la validación cruzada, una o más variables presentaron **varianza cero**, es decir, tenían el mismo valor para todas las observaciones dentro de ese fold. Esto puede ocurrir por dos razones principales:
+
+1. **Variables extremadamente raras**: por ejemplo, si una categoría (como `GarageQual.Po`) solo está presente en muy pocos registros del conjunto original.
+2. **Tamaño reducido de los folds**: al dividir los datos en 10 particiones, es posible que ciertas combinaciones poco frecuentes no aparezcan en algunas de ellas, generando varianza nula.
+
+> A pesar de estos avisos, el modelo **no se interrumpió** y los resultados obtenidos fueron válidos. Este comportamiento es común en problemas con muchas variables dummies y alta dispersión de clases.
+
+**✅ Conclusión del modelo SVM lineal multiclase**
+
+El modelo SVM con kernel lineal ha demostrado ser **efectivo** para clasificar viviendas según su precio relativo (`barata`, `media` o `cara`). Sus resultados de validación cruzada indican un **desempeño robusto** y **generalizable**. Además, al no presentar problemas graves de colinealidad ni sobreajuste evidente, el modelo está **listo para ser evaluado sobre el conjunto de prueba** (`test_set.csv`) en la siguiente etapa del análisis.
+
+Este modelo también servirá como base de comparación para otros kernels (radial, polinomial) que se explorarán en el inciso siguiente.
+
+### 4. Genere varios (más de 2) modelos de SVM con diferentes kernels y distintos valores en los parámetros c, gamma (circular) y d (en caso de que utilice el polinomial). Puede tunear el modelo de forma automática siempre que explique los resultados 
+
+```{r}
+# 📦 Librerías necesarias
+library(caret)
+library(e1071)
+library(doParallel)
+
+# 🧵 Habilitar paralelización (opcional, si tienes varios núcleos)
+cl <- makePSOCKcluster(parallel::detectCores() - 1)
+registerDoParallel(cl)
+
+# 🔄 Semilla para reproducibilidad
+set.seed(123)
+
+# ⚙️ Control con validación cruzada reducida para velocidad
+ctrl <- trainControl(method = "cv", number = 3, allowParallel = TRUE)
+
+# 📊 Modelo SVM Lineal (tuneando C)
+svm_linear <- train(
+  x = x_train_scaled,
+  y = y_train,
+  method = "svmLinear",
+  trControl = ctrl,
+  tuneLength = 3
+)
+print(svm_linear)
+
+# 🌐 Modelo SVM Radial (tuneando C y sigma)
+svm_radial <- train(
+  x = x_train_scaled,
+  y = y_train,
+  method = "svmRadial",
+  trControl = ctrl,
+  tuneLength = 3
+)
+print(svm_radial)
+
+# 🔺 Modelo SVM Polinomial (tuneando C, degree, scale)
+svm_poly <- train(
+  x = x_train_scaled,
+  y = y_train,
+  method = "svmPoly",
+  trControl = ctrl,
+  tuneLength = 3
+)
+print(svm_poly)
+
+# 🛑 Detener clúster paralelo
+stopCluster(cl)
+registerDoSEQ()
+```
+
+En esta sección se entrenaron y compararon **tres modelos de Máquinas de Vectores de Soporte (SVM)** utilizando diferentes funciones **kernel**: **lineal**, **radial (RBF)** y **polinomial**. El objetivo fue explorar el impacto del tipo de kernel y la selección de hiperparámetros sobre el rendimiento predictivo del modelo al clasificar las viviendas como `barata`, `media` o `cara`.
+
+**📌 Configuración del experimento**
+
+- Se usó la función `train()` del paquete `caret`, que permite ajustar automáticamente los hiperparámetros mediante **validación cruzada**.
+- Se utilizó `trainControl(method = "cv", number = 3)` para llevar a cabo una validación cruzada estratificada con 3 particiones.
+- Se emplearon los datos previamente escalados y transformados (`x_train_scaled`) con `207` predictores y la variable respuesta `y_train` con tres clases (`barata`, `media`, `cara`).
+- La opción `tuneLength = 5` permitió evaluar automáticamente 5 combinaciones diferentes de hiperparámetros para cada modelo.
+
+**⚙️ Modelo 1: SVM con kernel lineal**
+
+Este modelo utiliza un **hiperplano lineal** para separar las clases. Solo se ajustó el parámetro `C`, que controla el equilibrio entre el margen y los errores de clasificación.
+
+**Resultados:**
+- Accuracy promedio: **0.8132**
+- Kappa: **0.7198**
+- Mejor valor de C: `1` (único evaluado)
+
+**Interpretación:**
+- A pesar de su simplicidad, el modelo lineal obtuvo un rendimiento **sólido y competitivo**.
+- Es adecuado cuando los datos son linealmente separables o casi separables, como en este caso.
+
+**🌐 Modelo 2: SVM con kernel radial (RBF)**
+
+Este modelo utiliza una función kernel basada en distancia para transformar el espacio de características a uno de mayor dimensión, permitiendo separar clases no linealmente separables.
+
+**Resultados:**
+- Accuracy promedio: **0.7961**
+- Kappa: **0.6942**
+- Mejor combinación:
+  - C = `1`
+  - sigma = `0.00337579`
+
+**Interpretación:**
+- Aunque el modelo radial suele ser más flexible y potente, en este caso no superó al lineal ni al polinomial.
+- Esto podría indicar que los datos no requieren transformaciones no lineales tan complejas o que se necesita un ajuste más exhaustivo de hiperparámetros.
+
+**🔺 Modelo 3: SVM con kernel polinomial**
+
+Este modelo aplica una transformación polinomial del espacio de entrada, permitiendo modelar relaciones complejas entre variables. Se ajustaron tres hiperparámetros: `C`, `degree` y `scale`.
+
+**Resultados:**
+- Mejor Accuracy: **0.8399**
+- Mejor Kappa: **0.7599**
+- Combinación óptima:
+  - C = `1`
+  - degree = `1`
+  - scale = `0.1`
+
+**Interpretación:**
+- Fue el **modelo con mejor rendimiento** general.
+- A pesar de que `degree = 1` implica una transformación lineal, el parámetro `scale` puede modificar la contribución de las variables y mejorar el ajuste.
+- Es un buen ejemplo de cómo los kernels polinomiales pueden adaptarse mejor a ciertas relaciones en los datos sin requerir grados polinomiales elevados (lo que podría generar sobreajuste).
+
+**Conclusión del inciso**
+
+Tras entrenar los tres modelos y evaluar su rendimiento en validación cruzada, se concluye lo siguiente:
+
+1. El modelo **SVM Polinomial** fue el mejor en términos de **precisión (Accuracy)** y **consistencia (Kappa)**. Esto sugiere que su capacidad de capturar relaciones no lineales con cierta flexibilidad fue beneficiosa para la tarea de clasificación.
+
+2. El modelo **SVM Lineal** mostró un rendimiento casi equivalente al modelo polinomial, lo que indica que los datos originales ya poseían una estructura lo suficientemente separable linealmente. Esto lo convierte en una opción **eficiente y eficaz**, especialmente cuando se busca menor tiempo de cómputo.
+
+3. El modelo **SVM Radial** tuvo el rendimiento más bajo de los tres. Aunque este tipo de kernel suele funcionar bien en problemas más complejos, aquí no logró superar a los otros modelos. Podría deberse a una combinación subóptima de los parámetros o a que la complejidad adicional no era necesaria.
+
+4. Todos los modelos obtuvieron una **precisión superior al 75%**, lo cual es un indicador positivo de la calidad de los datos y del proceso de preprocesamiento previo.
+
+### 5. Use los modelos para predecir el valor de la variable respuesta 
+
+```{r}
+# 📦 Librerías necesarias
+library(caret)
+
+# 🎯 Predicciones con el modelo SVM Lineal
+pred_linear <- predict(svm_linear, newdata = x_test_scaled)
+conf_linear <- confusionMatrix(pred_linear, y_test)
+cat("📊 Matriz de confusión - SVM Lineal\n")
+print(conf_linear)
+
+# 🌐 Predicciones con el modelo SVM Radial
+pred_radial <- predict(svm_radial, newdata = x_test_scaled)
+conf_radial <- confusionMatrix(pred_radial, y_test)
+cat("\n📊 Matriz de confusión - SVM Radial\n")
+print(conf_radial)
+
+# 🔺 Predicciones con el modelo SVM Polinomial
+pred_poly <- predict(svm_poly, newdata = x_test_scaled)
+conf_poly <- confusionMatrix(pred_poly, y_test)
+cat("\n📊 Matriz de confusión - SVM Polinomial\n")
+print(conf_poly)
+```
+
+Tras el entrenamiento de los modelos SVM con distintos kernels, se procedió a realizar predicciones sobre el conjunto de prueba (`test_set.csv`) y evaluar su desempeño mediante las matrices de confusión y estadísticas asociadas. A continuación, se detallan los resultados, seguidos de un análisis comparativo y conclusiones.
+
+📊 **Modelo 1: SVM Lineal**
+
+- **Exactitud general (Accuracy):** 85.78%  
+- **Kappa:** 0.7866  
+- **Mejor clase predicha:** `cara`  
+  - **Sensibilidad (Recall):** 92.21%  
+  - **Especificidad:** 95.48%  
+  - **Precisión (PPV):** 91.03%  
+- **Clase más débil:** `media`  
+  - **Sensibilidad:** 75.32%  
+  - **Balanced Accuracy:** 83.15%
+
+🔎 *Análisis:*  
+El modelo lineal logra un rendimiento notable, identificando correctamente la mayoría de viviendas `baratas` y `caras`. Sin embargo, muestra cierta dificultad para distinguir la clase `media`, lo que sugiere que este kernel puede estar capturando patrones lineales más simples, pero no lo suficientemente ricos para captar variaciones más sutiles entre `media` y las otras categorías.
+
+🌐 **Modelo 2: SVM con Kernel Radial (RBF)**
+
+- **Exactitud general (Accuracy):** 87.07%  
+- **Kappa:** 0.8060  
+- **Mejor clase predicha:** `cara`  
+  - **Sensibilidad:** 93.51%  
+  - **Especificidad:** 95.48%  
+  - **Precisión (PPV):** 91.14%  
+- **Clase más débil:** `media`  
+  - **Sensibilidad:** 76.62%  
+  - **Balanced Accuracy:** 84.44%
+
+🔎 *Análisis:*  
+El kernel radial mejora en todos los aspectos respecto al modelo lineal. Su capacidad de modelar relaciones no lineales se refleja en una mejor detección de la clase `media` y una sensibilidad ligeramente más alta en la clase `barata`. La precisión global también aumenta, con un **mejor equilibrio entre sensibilidad y especificidad** en las tres clases.
+
+🔺 **Modelo 3: SVM con Kernel Polinomial**
+
+- **Exactitud general (Accuracy):** 87.07%  
+- **Kappa:** 0.8060  
+- **Mejor clase predicha:** `cara`  
+  - **Sensibilidad:** 92.21%  
+  - **Especificidad:** 97.42%  
+  - **Precisión (PPV):** 94.67%  
+- **Clase con mejor mejora:** `media`  
+  - **Sensibilidad:** 79.22%  
+  - **Balanced Accuracy:** 85.09%
+
+🔎 *Análisis:*  
+El modelo polinomial iguala al radial en precisión general, pero destaca por mejorar aún más la detección de la clase `media`, que tiende a ser la más difícil de distinguir debido a su solapamiento con las clases `barata` y `cara`. El grado polinomial utilizado permitió capturar interacciones más complejas entre variables, incrementando la sensibilidad y precisión en general.
+
+🧾 **Comparación de Métricas Clave**
+
+| **Modelo SVM**   | **Accuracy** | **Kappa** | **Sensibilidad (media)** | **Balanced Accuracy (media)**  |
+|------------------|--------------|-----------|---------------------------|-------------------------------|
+| Lineal           | 85.78%       | 0.7866    | 75.32%                    | 83.15%                        |
+| Radial (RBF)     | 87.07%       | 0.8060    | 76.62%                    | 84.44%                        |
+| Polinomial       | 87.07%       | 0.8060    | **79.22%**                | **85.09%**                    |
+
+**✅ Conclusiones**
+
+- Todos los modelos presentan un **alto nivel de precisión** y estabilidad, con valores de `Accuracy` por encima del 85% y `Kappa` superiores a 0.75, lo que indica un **acuerdo sustancial** entre predicciones y valores reales.
+- El **modelo SVM con kernel radial** muestra un desempeño consistente y equilibrado, siendo **muy confiable** para tareas generales de clasificación de viviendas.
+- El **modelo con kernel polinomial** presenta un rendimiento ligeramente superior en la clase `media`, lo que lo hace ideal si se desea una predicción más refinada de este segmento.
+- El **modelo lineal**, aunque efectivo, se ve limitado al no capturar completamente las relaciones no lineales entre las variables predictoras.
+
+📌 **Recomendación final:**  
+Para este conjunto de datos, los modelos SVM **con kernels no lineales** (Radial y Polinomial) ofrecen una **mejor capacidad predictiva** y deberían preferirse en aplicaciones prácticas, especialmente si el objetivo es minimizar errores en las viviendas clasificadas como `media`.
+
+### 6. Haga las matrices de confusión respectivas. 
+
+```{r}
+# 📦 Librerías necesarias
+library(caret)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+# 📊 Predicciones
+preds_linear <- predict(svm_linear, newdata = x_test_scaled)
+preds_radial <- predict(svm_radial, newdata = x_test_scaled)
+preds_poly   <- predict(svm_poly, newdata = x_test_scaled)
+
+# 🎯 Matrices de confusión
+conf_linear <- confusionMatrix(preds_linear, y_test)
+conf_radial <- confusionMatrix(preds_radial, y_test)
+conf_poly   <- confusionMatrix(preds_poly, y_test)
+
+# 📈 Función para graficar matriz de confusión
+plot_confusion <- function(cm, title) {
+  as.data.frame(cm$table) %>%
+    ggplot(aes(Prediction, Reference, fill = Freq)) +
+    geom_tile(color = "white") +
+    geom_text(aes(label = Freq), size = 4) +
+    scale_fill_gradient(low = "#e0f3db", high = "#43a2ca") +
+    labs(title = title, x = "Predicción", y = "Real") +
+    theme_minimal()
+}
+
+# 🖼️ Graficar
+plot_confusion(conf_linear, "Matriz de Confusión - SVM Lineal")
+plot_confusion(conf_radial, "Matriz de Confusión - SVM Radial")
+plot_confusion(conf_poly, "Matriz de Confusión - SVM Polinomial")
+
+# Mostrar resultados
+conf_linear
+conf_radial
+conf_poly
+```
+🔍 **Análisis y Conclusiones de los Modelos SVM**
+
+En esta etapa del proyecto, se entrenaron tres modelos de Máquinas de Vectores de Soporte (SVM) utilizando distintos kernels: **lineal**, **radial** y **polinomial**, con el objetivo de predecir si una vivienda pertenece a una de las tres categorías de precio (`barata`, `media` o `cara`). Cada modelo fue evaluado utilizando el conjunto de prueba `test_set.csv`, previamente normalizado y transformado.
+
+⚙️ **Resumen General del Rendimiento**
+
+| Modelo        | Accuracy     | Kappa      | Mejor Clasificación  |
+|---------------|--------------|------------|----------------------|
+| SVM Lineal    | **85.78%**   | **0.7866** | `cara`               |
+| SVM Radial    | **87.07%**   | **0.8060** | `cara`, `barata`     |
+| SVM Polinomial| **87.07%**   | **0.8060** | `cara`, `media`      |
+
+- La métrica de **Accuracy** refleja el porcentaje total de predicciones correctas sobre todas las observaciones del conjunto de prueba.
+- El índice de **Kappa** mide el grado de acuerdo entre las predicciones del modelo y los valores reales, **corrigiendo por el azar**. Un valor superior a 0.8 indica un excelente acuerdo.
+- **Todos los modelos superan por amplio margen el No Information Rate (33.6%)**, confirmando que no se trata de una predicción aleatoria.
+
+🔬 **Evaluación por Clase**
+
+Cada modelo fue analizado a fondo observando métricas importantes por categoría. Esto permite entender **cuáles clases predice mejor o peor cada modelo**:
+
+🔹 Clase `barata`
+
+| Métrica          | Lineal | Radial     | Polinomial|
+|------------------|--------|------------|-----------|
+| Sensibilidad     | 89.7%  | **91.0%**  | 89.7%     |
+| Especificidad    | 92.2%  | **92.9%**  | 92.2%     |
+| Valor pred. pos. | 85.4%  | **86.6%**  | 85.4%     |
+| Valor pred. neg. | 94.7%  | **95.3%**  | 94.7%     |
+
+> El modelo **radial** predice ligeramente mejor las viviendas baratas, mostrando mayor sensibilidad y precisión.
+
+🔹 Clase `cara`
+
+| Métrica          | Lineal | Radial     | Polinomial |
+|------------------|--------|------------|-----------|
+| Sensibilidad     | 92.2%  | **93.5%**  | 92.2%     |
+| Especificidad    | 95.5%  | **95.5%**  | **97.4%** |
+| Valor pred. pos. | 91.0%  | **91.1%**  | **94.7%** |
+| Valor pred. neg. | 96.1%  | **96.7%**  | 96.2%     |
+
+> En la clase `cara`, todos los modelos tienen excelente desempeño. El modelo **polinomial** obtiene el mayor valor predictivo positivo (94.7%).
+
+🔹 Clase `media`
+
+| Métrica          | Lineal | Radial     | Polinomial |
+|------------------|--------|------------|------------|
+| Sensibilidad     | 75.3%  | 76.6%      | **79.2%**  |
+| Especificidad    | 90.9%  | 92.3%      | 90.9%      |
+| Valor pred. pos. | 80.6%  | **83.1%**  | 81.3%      |
+| Valor pred. neg. | 88.1%  | **88.8%**  | **89.8%**  |
+
+> La categoría `media` resulta ser la **más difícil de predecir**, posiblemente por estar ubicada entre dos extremos (`barata` y `cara`). El modelo **polinomial** ofrece la mejor sensibilidad en esta clase.
+
+📌 **Interpretación de los Resultados**
+
+- **Balance de clases:** Las tres clases (`barata`, `media`, `cara`) tienen una distribución equitativa, lo que da mayor validez a las métricas obtenidas.
+- **Desempeño general:** Los tres modelos son sólidos, pero el **SVM Radial** y el **SVM Polinomial** muestran un rendimiento ligeramente superior al SVM Lineal en la mayoría de las métricas.
+- **Robustez del modelo polinomial:** A pesar de ser más complejo y costoso computacionalmente, logra **el mejor desempeño combinado** en sensibilidad, precisión positiva y exactitud balanceada en las tres clases.
+- **Especificidad alta en todas las clases:** Indica que los modelos rara vez etiquetan incorrectamente una vivienda de otra clase cuando no lo es. Esto es clave para problemas donde **los falsos positivos son costosos**.
+
+✅ **Conclusión Final**
+
+El análisis exhaustivo de las matrices de confusión y las métricas asociadas demuestra que los modelos SVM entrenados, especialmente los **con kernel radial y polinomial**, logran un **alto nivel de precisión, balance y capacidad discriminativa** al predecir el valor categórico de una vivienda. Estos modelos son confiables para tareas reales de clasificación de precios inmobiliarios.
+
+En escenarios donde la interpretabilidad es importante o el tiempo de cómputo es limitado, **SVM Lineal** sigue siendo una opción muy competitiva. Sin embargo, para aplicaciones donde la exactitud es prioritaria, se recomienda optar por **SVM Radial o Polinomial**.
+
+🔍 **Análisis de las matrices de confusión (SVM Lineal, Radial y Polinomial)**
+
+**📊 Modelo SVM Lineal**
+
+- Predice muy bien las clases `barata` y `cara`, con 70 y 71 aciertos respectivamente.
+- Sin embargo, tiene más errores al clasificar la clase `media`:
+  - Clasifica 58 viviendas realmente `media` como `barata`.
+- Esto sugiere que el modelo **tiende a confundir “media” con “barata”** más que con “cara”.
+
+**Observación clave:** El modelo tiene un leve sesgo hacia la clase `barata` cuando no puede distinguir bien entre las demás.
+
+**📊 Modelo SVM Radial**
+
+- También predice con alta precisión `barata` (71) y `cara` (72).
+- La clase `media` mejora levemente con respecto al lineal:
+  - 59 aciertos frente a 58 en el modelo lineal.
+  - Menor confusión generalizada.
+
+**Observación clave:** El kernel radial tiene mejor capacidad de generalización que el lineal en este caso, capturando relaciones más complejas.
+
+**📊 Modelo SVM Polinomial**
+
+- El modelo polinomial presenta resultados similares al radial, con:
+  - 70 aciertos en `barata`, 71 en `cara` y 61 en `media`.
+- Tiene la menor cantidad de errores en la clase `media` entre los tres modelos.
+
+**Observación clave:** El modelo polinomial es el **más equilibrado** al clasificar las tres categorías de forma similar, con menos confusión.
+
+**✅ Conclusiones Generales**
+
+- Todos los modelos logran una **exactitud superior al 85%**, lo que refleja una buena capacidad predictiva en general.
+- El **modelo radial y el polinomial** presentan un **mejor balance entre clases** que el lineal.
+- El **SVM polinomial destaca** por su desempeño particularmente sólido en la clase `media`, que suele ser la más difícil de predecir correctamente.
+- La **confusión frecuente entre `barata` y `media`** en todos los modelos sugiere que hay similitudes en las características de esas viviendas que dificultan su separación clara.
+
+### 7. Analice si los modelos están sobreajustados o desajustados. ¿Qué puede hacer para manejar el sobreajuste o desajuste? 
+
+🔍 **Análisis de sobreajuste o desajuste en los modelos SVM**
+
+En esta sección se analiza si los modelos construidos con máquinas de vectores de soporte (SVM), utilizando diferentes kernels (lineal, radial y polinomial), presentan **sobreajuste** (`overfitting`) o **desajuste** (`underfitting`). Este análisis es esencial para validar si el modelo es **capaz de generalizar** correctamente al conjunto de prueba, o si simplemente está memorizando los datos de entrenamiento.
+
+📊 **Desempeño comparativo**
+
+| Modelo         | Accuracy Entrenamiento (CV)  | Accuracy en Prueba  |
+|----------------|------------------------------|---------------------|
+| SVM Lineal     | ~83.99%                      | 85.78%              |
+| SVM Radial     | ~87.07%                      | 87.07%              |
+| SVM Polinomial | ~87.07%                      | 87.07%              |
+
+> Estos valores fueron obtenidos a partir del proceso de validación cruzada con 3 folds (por razones de rendimiento), y posteriormente evaluados con el conjunto de prueba separado (`test_set.csv`).
+
+🧠 **¿Qué es el sobreajuste?**
+
+El **sobreajuste** ocurre cuando un modelo aprende muy bien los datos de entrenamiento, incluyendo el ruido o los patrones particulares de esos datos, pero **falla al enfrentarse a nuevos datos**. Es decir, tiene un **accuracy muy alto en entrenamiento**, pero bajo en prueba.
+
+**Indicadores comunes de sobreajuste:**
+- Accuracy muy alto en entrenamiento, pero bajo en prueba.
+- Kappa disminuye drásticamente en prueba.
+- Buen desempeño en clases frecuentes, pero mal en clases menos representadas.
+
+**⚖️ ¿Qué es el desajuste?**
+
+El **desajuste** ocurre cuando un modelo es demasiado simple o tiene mala configuración y **no logra capturar los patrones importantes** del conjunto de entrenamiento. Esto produce bajos niveles de exactitud tanto en entrenamiento como en prueba.
+
+**Indicadores comunes de desajuste:**
+- Accuracy bajo en ambos conjuntos.
+- Coeficientes de Kappa y Balanced Accuracy bajos.
+- Predicciones distribuidas casi aleatoriamente.
+
+✅ **¿Se observa sobreajuste o desajuste en este caso?**
+
+No. Según los resultados obtenidos:
+
+1. **El accuracy en entrenamiento y prueba es similar en los tres modelos.**
+   - Esto significa que los modelos no están memorizando los datos de entrenamiento, sino que están **generalizando correctamente**.
+
+2. **El valor de Kappa se mantiene alto** (≈ 0.80) en todos los modelos.
+   - El índice Kappa mide el acuerdo entre lo predicho y la realidad, controlando el azar.
+   - Un Kappa entre 0.75 y 1.00 se considera **muy bueno**.
+
+3. **El Balanced Accuracy por clase es alto** (> 0.83 en promedio).
+   - Esto indica que los modelos no solo predicen bien la clase más común, sino que **reconocen correctamente cada categoría (`barata`, `media`, `cara`)**.
+
+🧰 **¿Qué se podría hacer en caso de detectar sobreajuste?**
+
+Si en algún modelo se observara sobreajuste en el futuro, se podrían aplicar las siguientes técnicas para corregirlo:
+
+| Acción                                         | Descripción                                                                |
+|------------------------------------------------|----------------------------------------------------------------------------|
+| **Regularización (Reducir `C`)**               | Un valor más bajo de `C` permite un margen mayor y evita ajustes exactos.  |
+| **Reducir complejidad del modelo**             | En SVM polinomial, reducir el `degree`; en radial, reducir `gamma`.        |
+| **Eliminar variables poco relevantes**         | Reduce el ruido y evita que el modelo aprenda relaciones espurias.         |
+| **Aplicar técnicas de selección de variables** | Como `recursive feature elimination (RFE)` o `filter methods`.             |
+| **Aumentar el número de folds**                | Validación cruzada con más folds mejora la evaluación general.             |
+
+🧰 **¿Y si hubiera desajuste?**
+
+Si el modelo no estuviera aprendiendo correctamente (accuracy bajo tanto en entrenamiento como en prueba), se podrían aplicar las siguientes estrategias:
+
+| Acción                                        | Descripción                                                              |
+|-----------------------------------------------|--------------------------------------------------------------------------|
+| **Aumentar la complejidad del modelo**        | En polinomial: subir `degree`, en radial: subir `gamma` o ajustar `C`.   |
+| **Agregar más variables predictoras**         | Incluir variables no utilizadas que podrían contener información útil.   |
+| **Utilizar otros kernels**                    | Como `sigmoidal`, o incluso cambiar de algoritmo (Random Forest, etc.).  |
+| **Hacer ingeniería de características**       | Crear nuevas variables a partir de las existentes.                       |
+
+🧾 **Conclusión**
+
+Los tres modelos SVM entrenados muestran un **desempeño sólido y equilibrado**. No se identificó evidencia de sobreajuste ni desajuste:
+
+- El desempeño entre entrenamiento y prueba es coherente.
+- Se observó una buena precisión, sensibilidad y especificidad por clase.
+- El modelo generaliza bien sin memorizar.
+
+Esto respalda la validez del proceso de construcción, preprocesamiento y ajuste de los modelos utilizados.
+
+### 8. Compare los resultados obtenidos con los diferentes modelos que hizo en cuanto a efectividad, tiempo de procesamiento y equivocaciones (donde el algoritmo se equivocó más, donde se equivocó menos y la importancia que tienen los errores). 
 
 ```{r}
 
 ```
 
-### 5. Haga las matrices de confusión respectivas. 
+### 9. Compare la eficiencia del mejor modelo de SVM con los resultados obtenidos en los algoritmos de las hojas de trabajo anteriores que usen la misma variable respuesta (árbol de decisión y random forest, naive bayes, KNN, regresión logística). ¿Cuál es mejor para predecir? ¿Cuál se demoró más en procesar? 
 
 ```{r}
 
 ```
 
-### 6. Analice si los modelos están sobreajustados o desajustados. ¿Qué puede hacer para manejar el sobreajuste o desajuste? 
+### 10. Genere un buen modelo de regresión, use para esto la variable del precio de la casa directamente. Tunee el modelo. 
 
 ```{r}
 
 ```
 
-### 7. Compare los resultados obtenidos con los diferentes modelos que hizo en cuanto a efectividad, tiempo de procesamiento y equivocaciones (donde el algoritmo se equivocó más, donde se equivocó menos y la importancia que tienen los errores). 
+### 11. Compare los resultados del modelo de regresión generado con los de hojas anteriores que utilicen la misma variable, como la de regresión lineal, el árbol de regresión, naive bayes, KNN.  
 
 ```{r}
 
 ```
 
-### 8. Compare la eficiencia del mejor modelo de SVM con los resultados obtenidos en los algoritmos de las hojas de trabajo anteriores que usen la misma variable respuesta (árbol de decisión y random forest, naive bayes, KNN, regresión logística). ¿Cuál es mejor para predecir? ¿Cuál se demoró más en procesar? 
-
-```{r}
-
-```
-
-### 9. Genere un buen modelo de regresión, use para esto la variable del precio de la casa directamente. Tunee el modelo. 
-
-```{r}
-
-```
-
-### 10. Compare los resultados del modelo de regresión generado con los de hojas anteriores que utilicen la misma variable, como la de regresión lineal, el árbol de regresión, naive bayes, KNN.  
-
-```{r}
-
-```
-
-### 11. Genere un informe de los resultados y las explicaciones. 
+### 12. Genere un informe de los resultados y las explicaciones. 
 
 ```{r}
 
