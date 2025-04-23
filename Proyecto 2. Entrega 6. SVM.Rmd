@@ -159,10 +159,6 @@ cat("Train:", dim(x_train_scaled), " | Test:", dim(x_test_scaled), "\n")
 
 > Las transformaciones realizadas —**dummificación de variables categóricas**, **normalización de variables numéricas**, y **selección de variables relevantes**— son esenciales para garantizar el correcto funcionamiento de los modelos SVM, especialmente cuando se usan kernels no lineales. Esto deja los datos completamente preparados para entrenar modelos en el siguiente paso.
 
-Perfecto, aquí tienes el **texto completo y explicativo** incluyendo tanto el aviso de varianza como el mensaje de confirmación del preprocesamiento:
-
----
-
 ### 🧼 Preprocesamiento exitoso de los datos para SVM
 
 Al finalizar el preprocesamiento, el sistema reportó lo siguiente:
