@@ -815,7 +815,7 @@ Los tres modelos SVM entrenados muestran un **desempeño sólido y equilibrado**
 
 - El desempeño entre entrenamiento y prueba es coherente.
 - Se observó una buena precisión, sensibilidad y especificidad por clase.
-- El modelo generaliza bien sin memorizar.
+- El modelo generaliza bien sin s
 - El polynomial fue el que mejor desempeño tuvo con 87%
 - El grafico de curva de aprendizaje del polomial nos demuestra que es muy buen modelo y que no existe sobreajuste ni subajuste
 

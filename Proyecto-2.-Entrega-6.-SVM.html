@@ -736,7 +736,6 @@ de las categóricas.</p>
 de trabajo pasadas para probar el algoritmo.</h3>
 <pre class="r"><code># 📦 Cargar librerías necesarias
 library(dplyr)</code></pre>
-<pre><code>## Warning: package &#39;dplyr&#39; was built under R version 4.4.3</code></pre>
 <pre><code>## 
 ## Adjuntando el paquete: &#39;dplyr&#39;</code></pre>
 <pre><code>## The following objects are masked from &#39;package:stats&#39;:
@@ -905,9 +904,7 @@ usarán <strong>solo variables numéricas puras</strong>, excluyendo el
 library(caret)</code></pre>
 <pre><code>## Warning: package &#39;caret&#39; was built under R version 4.4.3</code></pre>
 <pre><code>## Cargando paquete requerido: ggplot2</code></pre>
-<pre><code>## Warning: package &#39;ggplot2&#39; was built under R version 4.4.3</code></pre>
 <pre><code>## Cargando paquete requerido: lattice</code></pre>
-<pre><code>## Warning: package &#39;lattice&#39; was built under R version 4.4.3</code></pre>
 <pre class="r"><code>library(dplyr)
 
 # 🔄 Semilla
@@ -1231,9 +1228,8 @@ que utilice el polinomial). Puede tunear el modelo de forma automática
 siempre que explique los resultados</h3>
 <pre class="r"><code># 📦 Librerías necesarias
 library(caret)
-library(e1071)</code></pre>
-<pre><code>## Warning: package &#39;e1071&#39; was built under R version 4.4.3</code></pre>
-<pre class="r"><code>library(doParallel)</code></pre>
+library(e1071)
+library(doParallel)</code></pre>
 <pre><code>## Cargando paquete requerido: foreach</code></pre>
 <pre><code>## Cargando paquete requerido: iterators</code></pre>
 <pre><code>## Cargando paquete requerido: parallel</code></pre>
@@ -2295,6 +2291,887 @@ Forest, etc.).</td>
 </tr>
 </tbody>
 </table>
+<p>🧾 <strong>Curva de Aprendizaje</strong></p>
+<p>Vamos a mostrar los resultados con la curva de De la SVM poly</p>
+<pre class="r"><code>library(caret)
+library(ggplot2)
+
+# Porcentajes de entrenamiento a usar
+tamaños &lt;- seq(0.1, 1.0, by = 0.1)
+
+# Para guardar métricas
+acc_train_poly &lt;- c()
+acc_test_poly &lt;- c()
+
+set.seed(123)  # Reproducibilidad
+
+for (t in tamaños) {
+  # Seleccionar subconjunto del set de entrenamiento
+  idx &lt;- createDataPartition(y_train, p = t, list = FALSE)
+  x_t &lt;- x_train_scaled[idx, ]
+  y_t &lt;- y_train[idx]
+
+  # Entrenar modelo con tuneLength y trControl como en tu código original
+  modelo_poly &lt;- train(
+    x = x_t,
+    y = y_t,
+    method = &quot;svmPoly&quot;,
+    trControl = ctrl,           # tu objeto de control (por ejemplo, repeatedcv o cv)
+    tuneLength = 3              # caret probará 3 combinaciones automáticamente
+  )
+
+  # Predicciones sobre el mismo set de entrenamiento
+  pred_train &lt;- predict(modelo_poly, newdata = x_t)
+  acc_train_poly &lt;- c(acc_train_poly, mean(pred_train == y_t))
+
+  # Predicciones sobre el test fijo
+  pred_test &lt;- predict(modelo_poly, newdata = x_test_scaled)
+  acc_test_poly &lt;- c(acc_test_poly, mean(pred_test == y_test))
+}</code></pre>
+<pre><code>## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.
+## Warning in .local(x, ...): Variable(s) `&#39; constant. Cannot scale data.</code></pre>
+<pre class="r"><code># Crear dataframe para graficar
+df_poly &lt;- data.frame(
+  Tamaño = tamaños * 100,
+  Entrenamiento = acc_train_poly,
+  Test = acc_test_poly
+)
+
+# Graficar la curva
+ggplot(df_poly, aes(x = Tamaño)) +
+  geom_line(aes(y = Entrenamiento, color = &quot;Entrenamiento&quot;)) +
+  geom_line(aes(y = Test, color = &quot;Test&quot;)) +
+  labs(
+    title = &quot;Curva de Aprendizaje - SVM Polinomial (tuneLength = 3)&quot;,
+    x = &quot;Tamaño del set de entrenamiento (%)&quot;,
+    y = &quot;Accuracy&quot;
+  ) +
+  scale_color_manual(values = c(&quot;darkgreen&quot;, &quot;red&quot;)) +
+  theme_minimal()</code></pre>
+<p><img role="img" src="data:image/png;base64,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" width="672" />
+🧾 <strong>Analisis de Curva de Aprendizaje.</strong></p>
+<p>Podemos ver que el modelo de SVM polinomial no esta sobreajustado
+debido a que no se sobreponen las graficas. Y tambien observamos que los
+2 conjuntos convergen en tender a tener casi que el mismo acurrancy . Lo
+que indica que nuestro modelo no esta subajustado. Por lo que podemos
+decir que es muy buen modelo de svm que estamos utilizando</p>
 <p>🧾 <strong>Conclusión</strong></p>
 <p>Los tres modelos SVM entrenados muestran un <strong>desempeño sólido
 y equilibrado</strong>. No se identificó evidencia de sobreajuste ni
@@ -2303,7 +3180,10 @@ desajuste:</p>
 <li>El desempeño entre entrenamiento y prueba es coherente.</li>
 <li>Se observó una buena precisión, sensibilidad y especificidad por
 clase.</li>
-<li>El modelo generaliza bien sin memorizar.</li>
+<li>El modelo generaliza bien sin s</li>
+<li>El polynomial fue el que mejor desempeño tuvo con 87%</li>
+<li>El grafico de curva de aprendizaje del polomial nos demuestra que es
+muy buen modelo y que no existe sobreajuste ni subajuste</li>
 </ul>
 <p>Esto respalda la validez del proceso de construcción,
 preprocesamiento y ajuste de los modelos utilizados.</p>
