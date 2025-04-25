@@ -741,6 +741,74 @@ Si el modelo no estuviera aprendiendo correctamente (accuracy bajo tanto en entr
 | **Utilizar otros kernels**                    | Como `sigmoidal`, o incluso cambiar de algoritmo (Random Forest, etc.).  |
 | **Hacer ingeniería de características**       | Crear nuevas variables a partir de las existentes.                       |
 
+
+🧾 **Curva de Aprendizaje**
+
+Vamos a mostrar los resultados con la curva de   De la SVM poly
+
+```{r}
+
+library(caret)
+library(ggplot2)
+
+# Porcentajes de entrenamiento a usar
+tamaños <- seq(0.1, 1.0, by = 0.1)
+
+# Para guardar métricas
+acc_train_poly <- c()
+acc_test_poly <- c()
+
+set.seed(123)  # Reproducibilidad
+
+for (t in tamaños) {
+  # Seleccionar subconjunto del set de entrenamiento
+  idx <- createDataPartition(y_train, p = t, list = FALSE)
+  x_t <- x_train_scaled[idx, ]
+  y_t <- y_train[idx]
+
+  # Entrenar modelo con tuneLength y trControl como en tu código original
+  modelo_poly <- train(
+    x = x_t,
+    y = y_t,
+    method = "svmPoly",
+    trControl = ctrl,           # tu objeto de control (por ejemplo, repeatedcv o cv)
+    tuneLength = 3              # caret probará 3 combinaciones automáticamente
+  )
+
+  # Predicciones sobre el mismo set de entrenamiento
+  pred_train <- predict(modelo_poly, newdata = x_t)
+  acc_train_poly <- c(acc_train_poly, mean(pred_train == y_t))
+
+  # Predicciones sobre el test fijo
+  pred_test <- predict(modelo_poly, newdata = x_test_scaled)
+  acc_test_poly <- c(acc_test_poly, mean(pred_test == y_test))
+}
+
+# Crear dataframe para graficar
+df_poly <- data.frame(
+  Tamaño = tamaños * 100,
+  Entrenamiento = acc_train_poly,
+  Test = acc_test_poly
+)
+
+# Graficar la curva
+ggplot(df_poly, aes(x = Tamaño)) +
+  geom_line(aes(y = Entrenamiento, color = "Entrenamiento")) +
+  geom_line(aes(y = Test, color = "Test")) +
+  labs(
+    title = "Curva de Aprendizaje - SVM Polinomial (tuneLength = 3)",
+    x = "Tamaño del set de entrenamiento (%)",
+    y = "Accuracy"
+  ) +
+  scale_color_manual(values = c("darkgreen", "red")) +
+  theme_minimal()
+
+
+```
+🧾 **Analisis de Curva de Aprendizaje.**
+
+Podemos ver que el modelo de SVM polinomial no esta sobreajustado debido a que no se sobreponen las graficas. Y tambien observamos que los 2 conjuntos convergen en tender a tener casi que el mismo acurrancy . Lo que indica que nuestro modelo no esta subajustado. Por lo que podemos decir que es muy buen modelo de svm que estamos utilizando
+
 🧾 **Conclusión**
 
 Los tres modelos SVM entrenados muestran un **desempeño sólido y equilibrado**. No se identificó evidencia de sobreajuste ni desajuste:
@@ -748,6 +816,8 @@ Los tres modelos SVM entrenados muestran un **desempeño sólido y equilibrado**
 - El desempeño entre entrenamiento y prueba es coherente.
 - Se observó una buena precisión, sensibilidad y especificidad por clase.
 - El modelo generaliza bien sin memorizar.
+- El polynomial fue el que mejor desempeño tuvo con 87%
+- El grafico de curva de aprendizaje del polomial nos demuestra que es muy buen modelo y que no existe sobreajuste ni subajuste
 
 Esto respalda la validez del proceso de construcción, preprocesamiento y ajuste de los modelos utilizados.
 
