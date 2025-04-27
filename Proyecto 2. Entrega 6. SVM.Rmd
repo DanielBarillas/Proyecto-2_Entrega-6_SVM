@@ -1049,8 +1049,32 @@ En conclusion el polinomial es mas preciso  y llega a predecir mejor que los otr
 #### Grafico de modelos
 
 ```{r}
-
+library(ggplot2)
+# Datos de clasificación
+clasificacion <- data.frame(
+Modelo = c("Regresion Logistica","KNN","Naive Bayes", "Random Forest", "Árbol de Clasificación", "SVM"),
+Accuracy = c(0.7013, 0.67, 0.8041237, 0.9816934, 0.7414188, 0.8707)
+)
+# Gráfico de Accuracy (Clasificación)
+ggplot(clasificacion, aes(x = Modelo, y = Accuracy, fill = Modelo)) +
+geom_bar(stat = "identity", color = "black", alpha = 0.8) +
+labs(title = "Comparación de Accuracy en Modelos de Clasificación",
+x = "Modelo",
+y = "Accuracy") +
+theme_minimal() +
+theme(legend.position = "none")
 ```
+
+
+
+#### Analisis de Modelos
+
+Podemos ver que el mejor modelo de los 3 sigue siendo el random forest para poder clasificar pero SVM tiene mayor presicion que todos excepto a Random Forest. 
+
+
+En terminos de velocidad sigue siendo regresion logistica el mejor y de hecho SVM es el peor de todos si usamos el polinomial , puede llegar a tardar casi lo mismo que el Random Forest. Esto puede ser porque ya que en general Random Forest hace una predicción basada en la agregación de los resultados de los árboles, lo cual es más rápido que resolver una optimización de SVM con un kernel complejo.
+
+En conclusion es muy bueno SVM de hecho de todos los que no son Random Forest es el mejor , y se recomienda usarlo pero polynomial, esto porque es mas rapido y lleva 0.85 de accurrancy a comparacion de los modelos anteriores. 
 
 ### 10. Genere un buen modelo de regresión, use para esto la variable del precio de la casa directamente. Tunee el modelo. 
 
