@@ -825,11 +825,228 @@ Esto respalda la validez del proceso de construcción, preprocesamiento y ajuste
 
 ### 8. Compare los resultados obtenidos con los diferentes modelos que hizo en cuanto a efectividad, tiempo de procesamiento y equivocaciones (donde el algoritmo se equivocó más, donde se equivocó menos y la importancia que tienen los errores). 
 
+
+#### Grafico del tiempo
+
 ```{r}
+
+
+library(caret)
+library(ggplot2)
+
+# Porcentajes de entrenamiento a usar
+tamaños <- seq(0.1, 1.0, by = 0.1)
+
+# Para guardar tiempos de entrenamiento
+tiempos_entrenamiento <- data.frame()
+
+set.seed(123)  # Reproducibilidad
+
+for (t in tamaños) {
+  # Seleccionar subconjunto del set de entrenamiento
+  idx <- createDataPartition(y_train, p = t, list = FALSE)
+  x_t <- x_train_scaled[idx, ]
+  y_t <- y_train[idx]
+  
+  # Entrenamiento de los tres modelos
+  for (modelo in c("svmRadial", "svmLinear", "svmPoly")) {
+    # Registrar el tiempo de inicio
+    start_time <- Sys.time()
+
+    # Entrenar modelo
+    modelo_train <- train(
+      x = x_t,
+      y = y_t,
+      method = modelo,
+      trControl = ctrl,  # tu objeto de control (por ejemplo, repeatedcv o cv)
+      tuneLength = 3      # caret probará 3 combinaciones automáticamente
+    )
+
+    # Registrar el tiempo de fin
+    end_time <- Sys.time()
+    
+    # Calcular el tiempo de entrenamiento
+    tiempo_entrenamiento <- as.numeric(difftime(end_time, start_time, units = "secs"))
+    
+    # Almacenar el tiempo en la lista
+    tiempos_entrenamiento <- rbind(tiempos_entrenamiento, 
+                                   data.frame(Modelo = modelo, Tamaño = t * 100, Tiempo = tiempo_entrenamiento))
+  }
+}
+
+# Graficar el tiempo de entrenamiento
+ggplot(tiempos_entrenamiento, aes(x = Tamaño, y = Tiempo, color = Modelo)) +
+  geom_line() +
+  labs(
+    title = "Tiempo de Entrenamiento por Modelo (SVM Radial, Linear y Polinomial)",
+    x = "Tamaño del set de entrenamiento (%)",
+    y = "Tiempo de entrenamiento (segundos)"
+  ) +
+  scale_color_manual(values = c("blue", "green", "red")) +
+  theme_minimal()
+
 
 ```
 
+
+#### Grafico de eficiencia
+```{r}
+
+
+models <- c("Linear", "Radial", "Polinomial")
+accuracy <- c(0.8578, 0.8578, 0.8707)
+
+
+sensitivity_model1 <- mean(c(0.8974, 0.9221, 0.7532))
+sensitivity_model2 <- mean(c(0.8974, 0.9481, 0.7273))
+sensitivity_model3 <- mean(c(0.8974, 0.9221, 0.7922))
+sensitivity <- c(sensitivity_model1, sensitivity_model2, sensitivity_model3)
+
+kappa <- c(0.7866, 0.7866, 0.8060)
+
+
+metrics <- data.frame(
+  Model = rep(models, 3),
+  Metric = rep(c("Accuracy", "Sensitivity", "Kappa"), each = 3),
+  Value = c(accuracy, sensitivity, kappa)
+)
+
+# Load ggplot2 library
+library(ggplot2)
+
+# Create the bar plot
+ggplot(metrics, aes(x = Model, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(title = "Model Performance Metrics",
+       x = "Model",
+       y = "Value") +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set1")
+
+```
+
+#### Analisis de Curva de Aprendizaje
+
+```{r}
+library(caret)
+library(ggplot2)
+
+# Porcentajes de entrenamiento a usar
+tamaños <- seq(0.1, 1.0, by = 0.1)
+
+# Para guardar métricas
+acc_train_poly <- c()
+acc_test_poly <- c()
+acc_train_radial <- c()
+acc_test_radial <- c()
+acc_train_linear <- c()
+acc_test_linear <- c()
+
+set.seed(123)  # Reproducibilidad
+
+for (t in tamaños) {
+  # Seleccionar subconjunto del set de entrenamiento
+  idx <- createDataPartition(y_train, p = t, list = FALSE)
+  x_t <- x_train_scaled[idx, ]
+  y_t <- y_train[idx]
+
+  # Entrenar modelo SVM Polinomial
+  modelo_poly <- train(
+    x = x_t,
+    y = y_t,
+    method = "svmPoly",
+    trControl = ctrl,           # tu objeto de control (por ejemplo, repeatedcv o cv)
+    tuneLength = 3              # caret probará 3 combinaciones automáticamente
+  )
+
+  # Entrenar modelo SVM Radial
+  modelo_radial <- train(
+    x = x_t,
+    y = y_t,
+    method = "svmRadial",
+    trControl = ctrl,
+    tuneLength = 3
+  )
+
+  # Entrenar modelo SVM Lineal
+  modelo_linear <- train(
+    x = x_t,
+    y = y_t,
+    method = "svmLinear",
+    trControl = ctrl,
+    tuneLength = 3
+  )
+
+  # Predicciones sobre el mismo set de entrenamiento
+  pred_train_poly <- predict(modelo_poly, newdata = x_t)
+  acc_train_poly <- c(acc_train_poly, mean(pred_train_poly == y_t))
+
+  pred_train_radial <- predict(modelo_radial, newdata = x_t)
+  acc_train_radial <- c(acc_train_radial, mean(pred_train_radial == y_t))
+
+  pred_train_linear <- predict(modelo_linear, newdata = x_t)
+  acc_train_linear <- c(acc_train_linear, mean(pred_train_linear == y_t))
+
+  # Predicciones sobre el test fijo
+  pred_test_poly <- predict(modelo_poly, newdata = x_test_scaled)
+  acc_test_poly <- c(acc_test_poly, mean(pred_test_poly == y_test))
+
+  pred_test_radial <- predict(modelo_radial, newdata = x_test_scaled)
+  acc_test_radial <- c(acc_test_radial, mean(pred_test_radial == y_test))
+
+  pred_test_linear <- predict(modelo_linear, newdata = x_test_scaled)
+  acc_test_linear <- c(acc_test_linear, mean(pred_test_linear == y_test))
+}
+
+# Crear dataframe para graficar
+df_completo <- data.frame(
+  Tamaño = tamaños * 100,
+  Entrenamiento_Poly = acc_train_poly,
+  Test_Poly = acc_test_poly,
+  Entrenamiento_Radial = acc_train_radial,
+  Test_Radial = acc_test_radial,
+  Entrenamiento_Linear = acc_train_linear,
+  Test_Linear = acc_test_linear
+)
+
+# Graficar la curva
+ggplot(df_completo, aes(x = Tamaño)) +
+  geom_line(aes(y = Entrenamiento_Poly, color = "Entrenamiento (Polinomial)")) +
+  geom_line(aes(y = Test_Poly, color = "Test (Polinomial)")) +
+  geom_line(aes(y = Entrenamiento_Radial, color = "Entrenamiento (Radial)")) +
+  geom_line(aes(y = Test_Radial, color = "Test (Radial)")) +
+  geom_line(aes(y = Entrenamiento_Linear, color = "Entrenamiento (Lineal)")) +
+  geom_line(aes(y = Test_Linear, color = "Test (Lineal)")) +
+  labs(
+    title = "Curvas de Aprendizaje - SVM Polinomial, Radial y Lineal",
+    x = "Tamaño del set de entrenamiento (%)",
+    y = "Accuracy"
+  ) +
+  scale_color_manual(values = c("darkgreen", "red", "blue", "orange", "purple", "brown")) +
+  theme_minimal()
+
+```
+
+
+
+
+#### Analisis de eficiencia de los modelos
+
+Analizando ambos graficos se puede ver que el modelo mas eficientes es el lineal debido a que es el mas rapido, pero en tema de rendimiento vemos que el polinomial es mucho mejor pero por unos 0.1 , a pesar de ello es el peor de todo en tiempo por lo que no se recomienda que se realice esto mismo para modelos de datos enormes. 
+
+En donde mas se equivocan los modelos si analizamos lo visto en el iniciso 6 es que identificacion de casas baratas y medias, esto debido a la naturaleza que las casas medias tienden a ser baratas.
+
+En el analisis de su curva de aprendizaje el que mejor le fue es el polinomial, porque el lineal su test esta muy alejado de su train por 0.2, tambien vemos que el radial le pasa lo mismo  pero el polinomial suele haber cierta tendencia a tener mejores resultados y deja un margen de mejora entre el train y el test haciendolo un poco mas generalista. Tambien vemos que ninguno tiene señales de subajuste o  sobreajuste
+
+
+En conclusion el polinomial es mas preciso  y llega a predecir mejor que los otros 2 , pero en terminos de rendimiento y generalizacion tenemos que el lineal es el mejor de los 3.
+
+
+
 ### 9. Compare la eficiencia del mejor modelo de SVM con los resultados obtenidos en los algoritmos de las hojas de trabajo anteriores que usen la misma variable respuesta (árbol de decisión y random forest, naive bayes, KNN, regresión logística). ¿Cuál es mejor para predecir? ¿Cuál se demoró más en procesar? 
+
+
+#### Grafico de modelos
 
 ```{r}
 
