@@ -4,9 +4,9 @@ author:
   - "Pablo Daniel Barillas Moreno, Carné No. 22193"
   - "Mathew Cordero Aquino, Carné No. 22982"
 output:
+  html_document: default
   pdf_document:
     latex_engine: xelatex
-  html_document: default
 always_allow_html: true
 date: "2025-03-14"
 header-includes:
@@ -1205,6 +1205,7 @@ rmse <- sqrt(mean((predictiones_poly - y_test)^2))
 cat("RMSE:", rmse, "\n")
 
 ```
+
 #### Analisis del Modelo
 
 Lineal 
@@ -1270,6 +1271,6 @@ En cuanto al modelo de SVM Polinomial, a pesar de sus capacidades teóricas para
 
 
 
-
-
 ### 12. Genere un informe de los resultados y las explicaciones. 
+
+Ver pdf extra añadido a la entrega
