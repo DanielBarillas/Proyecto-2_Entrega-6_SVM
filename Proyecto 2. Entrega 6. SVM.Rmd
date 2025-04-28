@@ -1078,19 +1078,198 @@ En conclusion es muy bueno SVM de hecho de todos los que no son Random Forest es
 
 ### 10. Genere un buen modelo de regresión, use para esto la variable del precio de la casa directamente. Tunee el modelo. 
 
+
+
+Vamos a probar con lineal y con Polinomial
+
 ```{r}
 
+
+train_data <- read.csv("train_set.csv", stringsAsFactors = FALSE)
+test_data <- read.csv("test_set.csv", stringsAsFactors = FALSE)
+
+library(dplyr)
+library(readr)
+
+# 🔄 Fijar semilla para reproducibilidad
+set.seed(123)
+
+train <- read_csv("train_set.csv")
+
+test <- read_csv("test_set.csv")
+
+
+train_svm <- train %>% select(-Id)
+test_svm  <- test %>% select(-Id)
+
+
+
+
+# 🎯 Variables objetivo
+y_train <- train_svm$SalePrice
+y_test  <- test_svm$SalePrice
+
+
+
+# 🔁 Convertir character a factor
+x_train <- x_train %>% mutate(across(where(is.character), as.factor))
+x_test  <- x_test %>% mutate(across(where(is.character), as.factor))
+
+# 🧩 Combinar para detectar todos los niveles posibles
+x_all <- bind_rows(x_train, x_test)
+
+# ⚙️ Crear dummyVars con todos los niveles presentes
+dv <- dummyVars(" ~ .", data = x_all, fullRank = TRUE)
+
+# 🔄 Generar dummies por separado
+x_train_dummy <- predict(dv, newdata = x_train)
+x_test_dummy  <- predict(dv, newdata = x_test)
+
+# 🧼 Preprocesar (centrar y escalar)
+preproc <- preProcess(x_train_dummy, method = c("center", "scale"))
+  
+# 📦 Librerías necesarias
+library(caret)
+library(dplyr)
+
+# 🔄 Fijar semilla
+set.seed(123)
+
+# 🧼 Convertir los dummy a data.frame
+x_train_dummy <- as.data.frame(x_train_dummy)
+x_test_dummy  <- as.data.frame(x_test_dummy)
+
+# 💣 Eliminar columnas con varianza 0 en train
+varianzas <- apply(x_train_dummy, 2, var)
+cols_validas <- names(varianzas[!is.na(varianzas) & varianzas > 0])
+x_train_dummy <- x_train_dummy[, cols_validas]
+
+# 🧩 Alinear columnas en test (agregar faltantes con 0)
+faltantes <- setdiff(cols_validas, colnames(x_test_dummy))
+for (col in faltantes) {
+  x_test_dummy[[col]] <- 0
+}
+
+# 🔄 Reordenar columnas en test para que coincidan con train
+x_test_dummy <- x_test_dummy[, cols_validas]
+
+# ✅ Confirmación de que están alineadas
+stopifnot(identical(colnames(x_train_dummy), colnames(x_test_dummy)))
+
+# ⚖️ Escalar datos
+preproc <- preProcess(x_train_dummy, method = c("center", "scale"))
+x_train_scaled <- predict(preproc, x_train_dummy)
+x_test_scaled  <- predict(preproc, x_test_dummy)
+
+# 🤖 Entrenar modelo SVM lineal con fallback a SVM radial
+cat("🎯 Entrenando modelo SVM lineal...\n")
+
+
+
+svm_linear_model <- train(
+    x = x_train_scaled,        
+    y = y_train,               
+    method = "svmLinear",       
+    trControl = trainControl(method = "cv", number = 10), 
+    preProcess = NULL,         
+    tuneLength = 3             
+)
+
+
+print(svm_linear_model)
+
+
+
+svm_poly_model <- train(
+    x = x_train_scaled,        
+    y = y_train,               
+    method = "svmPoly",       
+    trControl = trainControl(method = "cv", number = 10), 
+    preProcess = NULL,         
+    tuneLength = 3             
+)
+
+
+print(svm_poly_model)
+
+
+
+predictions <- predict(svm_linear_model, x_test_scaled)
+predictiones_poly <- predict(svm_poly_model, x_test_scaled)
+
+
+rmse <- sqrt(mean((predictions - y_test)^2))
+cat("RMSE:", rmse, "\n")
+
+rmse <- sqrt(mean((predictiones_poly - y_test)^2))
+cat("RMSE:", rmse, "\n")
+
 ```
+#### Analisis del Modelo
+
+Lineal 
+
+El modelo explica aproximadamente el 76% de la varianza en los precios de venta, lo que es relativamente bueno para predicción de precios de viviendas.
+
+Análisis de rendimiento:
+
+- RMSE en validación cruzada: 60,485.69
+- R-cuadrado: 0.759404 (aproximadamente 76%)
+- MAE: 38,899.11
+- RMSE en testing: 17,894.71
+
+
+Hay una gran diferencia entre el RMSE de validación cruzada (60,485) y el RMSE de testing (17,894). Esta discrepancia puede indicar:
+
+- Posible inconsistencia en los datos entre entrenamiento y prueba
+- Los conjuntos pueden tener distribuciones diferentes
+- Potencial sobreajuste en la evaluación final
+
+
+Ahora con el Polinomial tenemos que tuvo un 80% de R^2 lo cual es mucho mejor, el RSME fue de 25704.59 que es peor que el Lineal lo cual indica un peor rendimiento que el lineal asi que nos quedaremos con el polynomial.
+
+
+
+
+
+
+
+
+
+
 
 ### 11. Compare los resultados del modelo de regresión generado con los de hojas anteriores que utilicen la misma variable, como la de regresión lineal, el árbol de regresión, naive bayes, KNN.  
 
 ```{r}
 
+
+# Datos de regresión
+regresion <- data.frame(
+  Modelo = c("KNN", "Regresion Lineal", "Naive Bayes", "Árbol de Regresión", "SVM Lineal"),
+  MSE = c(0.1600, 0.000000000000000009157,0.05044311, 1658823049, 133.76 )
+)
+
+# Gráfico de MSE (Regresión)
+ggplot(regresion, aes(x = Modelo, y = MSE, fill = Modelo)) +
+  geom_bar(stat = "identity", color = "black", alpha = 0.8) +
+  labs(title = "Comparación de MSE en Modelos de Regresión",
+       x = "Modelo",
+       y = "MSE") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+
+
 ```
+
+#### Analisis de Rendimiento
+
+Vemos que el mejor de todos sigue siendo la Regresión Lineal, junto con Naive Bayes y KNN; sin embargo, logró ser considerablemente mejor que el Árbol de Regresión. Mientras la Regresión Lineal obtuvo un MSE de 133, el Árbol de Regresión alcanzó un MSE de 1,658,823,049, una diferencia abismal que evidencia la poca capacidad del árbol para ajustarse adecuadamente a los datos. Estos resultados nos indican que, aunque la Regresión Lineal no fue tan perfecta como se esperaba inicialmente, sigue representando una solución bastante sólida y confiable para la predicción de precios de viviendas en este caso.
+
+En cuanto al modelo de SVM Polinomial, a pesar de sus capacidades teóricas para capturar relaciones complejas no lineales, presentó serios inconvenientes en la práctica. El tiempo de entrenamiento y ajuste de hiperparámetros (tuneo) fue excesivamente alto, tardando aproximadamente 3 minutos por ejecución, incluso con conjuntos de datos de tamaño moderado. Esta lentitud lo vuelve poco práctico para tareas de regresión cuando se requieren resultados rápidos o cuando se trabaja con bases de datos más grandes. Además, su rendimiento en cuanto a error cuadrático medio no justificó el costo computacional involucrado, mostrando que el SVM Polinomial no es recomendable para este tipo de problemas de regresión cuando existen alternativas más rápidas y eficaces como la Regresión Lineal, KNN o incluso modelos más ligeros de SVM con kernels lineales o radiales.
+
+
+
+
 
 ### 12. Genere un informe de los resultados y las explicaciones. 
-
-```{r}
-
-```
-
